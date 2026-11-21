@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Meu Orçamento</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Orçamento">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#f5f6f8;--card:#fff;--tx:#1b1f27;--mut:#6b7280;--bd:#e5e7eb;--pri:#2563eb;--pri-t:#fff;--red:#dc2626;--grn:#16a34a;--amb:#d97706;--in:#f3f4f6}
+[data-theme=dark]{--bg:#0f1218;--card:#181c25;--tx:#e8eaf0;--mut:#9aa3b2;--bd:#272d3a;--pri:#4f8cff;--pri-t:#0b1020;--red:#f87171;--grn:#4ade80;--amb:#fbbf24;--in:#212736}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--tx);font-size:15px;line-height:1.4}
+.app{max-width:920px;margin:0 auto;padding:14px 14px 150px}
+h1{font-size:20px;margin:4px 0 14px}h2{font-size:16px;margin:0 0 10px}
+small,.mut{color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:14px}
+.grid{display:grid;gap:10px}.g4{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}.g2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.kpi small{display:block}.kpi b{font-size:20px}.kpi .sub{font-size:12px;color:var(--mut)}
+input,select,button,textarea{font:inherit;color:var(--tx)}
+input,select{background:var(--in);border:1px solid var(--bd);border-radius:10px;padding:9px 10px;min-width:0;width:100%}
+input[type=color]{padding:2px;height:38px;width:48px}input[type=checkbox]{width:auto}
+.btn{background:var(--pri);color:var(--pri-t);border:0;border-radius:10px;padding:10px 14px;font-weight:600;cursor:pointer}
+.btn.ghost{background:var(--in);color:var(--tx)}.btn.danger{background:var(--red);color:#fff}.btn.sm{padding:6px 10px;font-size:13px}
+.row{display:flex;align-items:center;gap:10px;padding:10px 4px;border-bottom:1px solid var(--bd);cursor:pointer}
+.row:last-child{border-bottom:0}.grow{flex:1;min-width:0}.grow b{overflow-wrap:anywhere}.grow small{display:block}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}
+.amt{font-weight:700;white-space:nowrap}.amt.in{color:var(--grn)}.amt.out{color:var(--tx)}
+.chip{display:inline-block;background:var(--in);border:1px solid var(--bd);border-radius:99px;padding:1px 8px;font-size:12px;margin:2px 2px 0 0}
+.chip.warn{color:var(--amb);border-color:var(--amb)}.chip.bad{color:var(--red);border-color:var(--red)}
+.up{color:var(--red)}.down{color:var(--grn)}
+.bar{height:8px;background:var(--in);border-radius:99px;overflow:hidden;margin-top:4px}.bar i{display:block;height:100%}
+.flex{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.between{justify-content:space-between}
+.donutwrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.donut{width:190px;height:190px;flex:none}.donut text{fill:var(--tx)}
+.legend{flex:1;min-width:240px}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:8px 6px;border-bottom:1px solid var(--bd);text-align:right;vertical-align:top}
+th:first-child,td:first-child{text-align:left}th{color:var(--mut);font-weight:600;font-size:12px}
+.scroll{overflow-x:auto}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--bd);display:flex;justify-content:center;padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav button{flex:1;max-width:180px;background:none;border:0;padding:10px 2px 9px;color:var(--mut);cursor:pointer;font-size:12px}
+nav button b{display:block;font-size:19px;font-weight:400}nav button.on{color:var(--pri);font-weight:700}
+.fab{position:fixed;right:16px;bottom:calc(74px + env(safe-area-inset-bottom));background:var(--pri);color:var(--pri-t);border:0;border-radius:99px;padding:14px 20px;font-weight:700;font-size:16px;box-shadow:0 6px 18px rgba(0,0,0,.28);z-index:6;cursor:pointer}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.sheet{background:var(--card);width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:16px;max-height:92vh;overflow:auto}
+.sheet.small{border-radius:16px;margin:auto;max-width:380px}.overlay:has(.small){align-items:center;padding:14px}
+@media(min-width:700px){.overlay{align-items:center}.sheet{border-radius:18px}}
+.hidden{display:none!important}
+label{display:block;font-size:12px;color:var(--mut);margin:8px 0 3px}
+.seg{display:flex;border:1px solid var(--bd);border-radius:10px;overflow:hidden}.seg button{flex:1;border:0;background:var(--in);padding:9px;cursor:pointer}.seg button.on{background:var(--pri);color:var(--pri-t);font-weight:700}
+.mic{background:var(--in);border:1px solid var(--bd);border-radius:10px;width:46px;font-size:20px;cursor:pointer;flex:none}.mic.rec{background:var(--red);color:#fff;animation:p 1s infinite}
+@keyframes p{50%{opacity:.55}}
+.hint{background:var(--in);border-radius:10px;padding:8px 10px;font-size:13px;margin:8px 0}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:130px;background:#111;color:#fff;padding:10px 16px;border-radius:99px;z-index:50;max-width:90vw;font-size:14px}
+.drop{border:2px dashed var(--bd);border-radius:14px;padding:26px;text-align:center;cursor:pointer}.drop.over{border-color:var(--pri)}
+.rv input,.rv select{padding:5px 6px;font-size:13px}.rv td{text-align:left}
+.banner{background:var(--in);border:1px dashed var(--bd);border-radius:12px;padding:10px 12px;margin-bottom:14px;font-size:13px}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}
+.x{cursor:pointer;margin-left:4px;opacity:.7}
+</style>
+</head>
+<body>
+<div class="app" id="view"></div>
+<button class="fab" data-act="new">+ Novo gasto</button>
+<nav id="nav"></nav>
+<div class="overlay hidden" id="sheet"><div class="sheet" id="sheetBody"></div></div>
+<input type="file" id="file" class="hidden" accept=".csv,.ofx,.qfx,.pdf,.txt">
+<input type="file" id="bkfile" class="hidden" accept=".json">
+
+<script>
+/* ============ utilidades ============ */
+const $=(s,e=document)=>e.querySelector(s);
+const p2=n=>String(n).padStart(2,'0');
+const iso=d=>d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
+const fmt=v=>(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const pct=v=>v.toLocaleString('pt-BR',{maximumFractionDigits:1,minimumFractionDigits:1})+'%';
+const fdate=s=>s.split('-').reverse().join('/');
+const norm=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const reEsc=s=>s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+const monthLabel=k=>{const [y,m]=k.split('-');const s=new Date(+y,+m-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});return s.charAt(0).toUpperCase()+s.slice(1)};
+const addMonth=(k,n)=>{const [y,m]=k.split('-').map(Number);const d=new Date(y,m-1+n,1);return d.getFullYear()+'-'+p2(d.getMonth()+1)};
+const PAYS=['Pix','Débito','Crédito','Dinheiro','Boleto','Outro'];
+
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),3500)}
+function ask(msg,ok='Sim',no='Não'){return new Promise(res=>{const o=document.createElement('div');o.className='overlay';o.style.zIndex=40;o.innerHTML=`<div class="sheet small"><p>${msg}</p><div class="flex" style="justify-content:flex-end"><button class="btn ghost" data-r="0">${no}</button><button class="btn" data-r="1">${ok}</button></div></div>`;o.onclick=e=>{const b=e.target.closest('[data-r]');if(!b)return;o.remove();res(b.dataset.r==='1')};document.body.appendChild(o)})}
+function download(name,content,type){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+
+/* ============ dados ============ */
+const DEF_CATS=[['Moradia','#6366f1'],['Alimentação','#f97316'],['Mercado','#22c55e'],['Transporte','#0ea5e9'],['Saúde','#ef4444'],['Educação','#a855f7'],['Lazer','#ec4899'],['Assinaturas','#14b8a6'],['Compras','#eab308'],['Dívidas/Cartão','#64748b'],['Impostos e Taxas','#78716c'],['Investimentos','#10b981'],['Outros','#94a3b8']];
+const DEF_RULES={
+Moradia:'aluguel,condominio,luz,energia,cpfl,copel,enel,agua,sanepar,saneamento,gas,internet,vivo fibra,claro,tim,iptu,reforma,telefone',
+'Alimentação':'ifood,restaurante,lanchonete,padaria,pizza,pizzaria,hamburguer,burger,mcdonalds,subway,cafe,cafeteria,rappi,lanche,sorveteria,acai',
+Mercado:'mercado,supermercado,atacadao,assai,carrefour,extra,hortifruti,acougue,sacolao,mercadinho',
+Transporte:'uber,99,99pop,posto,gasolina,combustivel,shell,ipiranga,estacionamento,pedagio,sem parar,onibus,metro,taxi,cabify',
+'Saúde':'drogaria,farmacia,drogasil,raia,pacheco,consulta,medico,dentista,laboratorio,hospital,plano de saude,unimed,exame,psicologo,academia',
+'Educação':'escola,faculdade,curso,udemy,alura,livraria,mensalidade escolar,colegio,ingles',
+Lazer:'cinema,ingresso,bar,show,viagem,hotel,airbnb,parque,teatro,steam,playstation,balada,clube',
+Assinaturas:'netflix,spotify,amazon prime,prime video,disney,hbo,youtube premium,deezer,globoplay,icloud,google one,apple.com,chatgpt,openai',
+Compras:'amazon,mercado livre,mercadolivre,shopee,magalu,magazine luiza,americanas,shein,aliexpress,renner,zara,loja,casas bahia,kabum',
+'Dívidas/Cartão':'juros,iof,anuidade,emprestimo,financiamento,encargos,multa,cheque especial',
+'Impostos e Taxas':'ipva,irpf,das,darf,imposto,taxa,tarifa,licenciamento,simples nacional,inss',
+Investimentos:'cdb,tesouro,corretora,b3,fii,acoes,poupanca,previdencia'};
+const KEY='orcamento_pessoal_v1';
+let MEM=null;
+function load(){try{const j=JSON.parse(localStorage.getItem(KEY));if(j&&Array.isArray(j.tx))return j}catch(e){}return fresh()}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){MEM=S}}
+function fresh(){
+  const s={tx:[],cats:DEF_CATS.map(([name,color])=>({name,color})),rules:[],budgets:{'Alimentação':400,Mercado:800,Lazer:250},theme:'auto'};
+  for(const c in DEF_RULES)DEF_RULES[c].split(',').forEach(kw=>s.rules.push({kw,cat:c}));
+  s.tx=sampleData();return s;
+}
+function sampleData(){
+  const now=new Date(),mk=(m,d)=>{const x=new Date(now.getFullYear(),now.getMonth()+m,1);const last=new Date(x.getFullYear(),x.getMonth()+1,0).getDate();let dd=Math.min(d,last);if(m===0)dd=Math.min(dd,now.getDate());return iso(new Date(x.getFullYear(),x.getMonth(),dd))};
+  const rows=[
+   [0,5,'Salário',5200,'in','Receita','Pix'],[0,3,'Aluguel',1450,'out','Moradia','Boleto'],[0,8,'Condomínio',380,'out','Moradia','Boleto'],[0,10,'Energia elétrica',210,'out','Moradia','Boleto'],[0,10,'Internet',120,'out','Moradia','Débito'],
+   [0,4,'Supermercado Assaí',420,'out','Mercado','Débito'],[0,14,'Carrefour',285,'out','Mercado','Crédito'],[0,6,'iFood',62,'out','Alimentação','Crédito'],[0,12,'Restaurante',98,'out','Alimentação','Crédito'],
+   [0,7,'Uber',34.5,'out','Transporte','Crédito'],[0,9,'Posto Shell',220,'out','Transporte','Débito'],[0,5,'Netflix',55.9,'out','Assinaturas','Crédito'],[0,5,'Spotify',21.9,'out','Assinaturas','Crédito'],
+   [0,11,'Farmácia',87.4,'out','Saúde','Pix'],[0,13,'Cinema',56,'out','Lazer','Crédito'],[0,15,'Amazon',189.9,'out','Compras','Crédito'],[0,2,'Academia',99.9,'out','Saúde','Débito'],
+   [-1,5,'Salário',5200,'in','Receita','Pix'],[-1,3,'Aluguel',1450,'out','Moradia','Boleto'],[-1,8,'Condomínio',380,'out','Moradia','Boleto'],[-1,10,'Energia elétrica',178,'out','Moradia','Boleto'],[-1,10,'Internet',120,'out','Moradia','Débito'],
+   [-1,4,'Supermercado Assaí',510,'out','Mercado','Débito'],[-1,16,'Carrefour',240,'out','Mercado','Crédito'],[-1,6,'iFood',140,'out','Alimentação','Crédito'],[-1,12,'Restaurante',75,'out','Alimentação','Crédito'],
+   [-1,7,'Uber',48,'out','Transporte','Crédito'],[-1,9,'Posto Shell',200,'out','Transporte','Débito'],[-1,5,'Netflix',55.9,'out','Assinaturas','Crédito'],[-1,5,'Spotify',21.9,'out','Assinaturas','Crédito'],
+   [-1,11,'Drogasil',45,'out','Saúde','Pix'],[-1,20,'Cinema',112,'out','Lazer','Crédito'],[-1,2,'Academia',99.9,'out','Saúde','Débito']];
+  return rows.map(([m,d,desc,amount,type,cat,pay])=>({id:uid(),date:mk(m,d),desc,amount,type,cat,pay,sample:true}));
+}
+let S=load();
+const ui={tab:'home',month:iso(new Date()).slice(0,7),f:{month:'cur',type:'',cat:'',pay:'',q:''}};
+const catColor=n=>(S.cats.find(c=>c.name===n)||{}).color||(n==='Receita'?'#16a34a':'#94a3b8');
+
+/* ============ categorização ============ */
+function categorize(text){
+  const n=norm(text).replace(/[^a-z0-9&]+/g,' ').trim();let best=null;
+  for(const r of S.rules){
+    const k=norm(r.kw).replace(/[^a-z0-9&]+/g,' ').trim();if(!k)continue;
+    if(!new RegExp('(^| )'+reEsc(k)+(k.length<=5?'( |$)':'')).test(n))continue;
+    if(!S.cats.some(c=>c.name===r.cat))continue;
+    if(!best||k.length>best.len)best={cat:r.cat,len:k.length};
+  }
+  return best?best.cat:null;
+}
+const STOP=new Set(['de','da','do','das','dos','compra','compras','pagamento','pgto','pix','cartao','loja','ltda','com','para','por','the','nos','nas','sao','pag','debito','credito']);
+function learnKeyword(desc){return norm(desc).split(/[^a-z0-9]+/).find(w=>w.length>=3&&!STOP.has(w)&&!/^\d+$/.test(w))||null}
+function addRule(kw,cat){const r=S.rules.find(x=>norm(x.kw)===norm(kw));if(r)r.cat=cat;else S.rules.push({kw,cat})}
+
+/* ============ interpretador de texto/voz ============ */
+const MESES_PT=['janeiro','fevereiro','marco','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+function parseNum(s){
+  if(s==null)return NaN;const s0=String(s).trim();if(!s0)return NaN;
+  const fd=s0.search(/\d/);if(fd<0)return NaN;
+  let neg=/^\(.*\)$/.test(s0)||/[-−–]/.test(s0.slice(0,fd))||/\d\s*[-−–]\s*$/.test(s0);
+  let t=s0.replace(/[^\d.,]/g,'');
+  const lc=t.lastIndexOf(','),ld=t.lastIndexOf('.');
+  if(lc>=0&&ld>=0){t=lc>ld?t.replace(/\./g,'').replace(',','.'):t.replace(/,/g,'')}
+  else if(lc>=0){t=t.replace(/\./g,'').replace(',','.')}
+  else if(ld>=0){const parts=t.split('.');if(parts.length>2)t=t.replace(/\./g,'')}
+  const v=parseFloat(t);return isNaN(v)?NaN:(neg?-v:v);
+}
+function parseNatural(text){
+  let s=' '+String(text||'').replace(/\s+/g,' ')+' ';const now=new Date();let date=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  let m;
+  if(/\banteontem\b/i.test(s)){date.setDate(date.getDate()-2);s=s.replace(/\banteontem\b/i,' ')}
+  else if(/\bontem\b/i.test(s)){date.setDate(date.getDate()-1);s=s.replace(/\bontem\b/i,' ')}
+  else if(/\bhoje\b/i.test(s)){s=s.replace(/\bhoje\b/i,' ')}
+  else if(m=s.match(/\b(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?\b/)){let y=m[3]?+m[3]:date.getFullYear();if(y<100)y+=2000;date=new Date(y,+m[2]-1,+m[1]);s=s.replace(m[0],' ')}
+  else if(m=s.match(/\bdia\s+(\d{1,2})\b(?:\s+de\s+([a-zç]+))?/i)){let mo=date.getMonth();if(m[2]){const i=MESES_PT.indexOf(norm(m[2]));if(i>=0)mo=i}date=new Date(date.getFullYear(),mo,+m[1]);s=s.replace(m[0],' ')}
+  let type='out';
+  if(/\b(recebi|receita|sal[aá]rio|ganhei|entrada|renda|rendimento|recebimento)\b/i.test(s))type='in';
+  let amount=NaN,rest=s;
+  if(m=s.match(/(\d+)\s*(?:reais)?\s+e\s+(\d{1,2})\b(?!\s*\/)/i)){amount=+m[1]+(+m[2])/(m[2].length===1?10:100);rest=s.replace(m[0],' ')}
+  else if(m=s.match(/(?:r\$\s*)?(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+(?:[.,]\d{1,2})?)(?:\s*reais)?/i)){amount=parseNum(m[1]);rest=s.replace(m[0],' ')}
+  let desc=rest.replace(/\b(gastei|paguei|comprei|compra|recebi|ganhei|reais|real|r\$)\b/gi,' ').replace(/\s+/g,' ').trim();
+  desc=desc.replace(/^(?:(?:no|na|em|de|do|da|com|o|a|um|uma|pra|para|nos|nas)\s+)+/i,'').replace(/(?:\s+(?:no|na|em|de|do|da|com|o|a|um|uma|pra|para))+$/i,'').trim();
+  if(desc)desc=desc.charAt(0).toUpperCase()+desc.slice(1);
+  const cat=type==='in'?'Receita':categorize(desc);
+  return {amount:isNaN(amount)?null:amount,desc,date:iso(date),type,cat};
+}
+
+/* ============ importação ============ */
+const MES={jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12};
+function parseDate(s){
+  s=String(s||'').trim();let m,y,mo,d;
+  if(m=s.match(/^(\d{4})-(\d{2})-(\d{2})/)){y=+m[1];mo=+m[2];d=+m[3]}
+  else if(m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})(?:[\/\-.](\d{2,4}))?/)){d=+m[1];mo=+m[2];y=m[3]?+m[3]:null;if(y!=null&&y<100)y+=2000}
+  else if(m=norm(s).match(/^(\d{1,2})\s*(?:de\s*)?(jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-z]*\.?(?:\s*(?:de\s*)?(\d{2,4}))?/)){d=+m[1];mo=MES[m[2]];y=m[3]?+m[3]:null;if(y!=null&&y<100)y+=2000}
+  else if(/^\d{8}/.test(s)){y=+s.slice(0,4);mo=+s.slice(4,6);d=+s.slice(6,8)}
+  else return null;
+  if(y==null){const now=new Date();y=now.getFullYear();if(new Date(y,mo-1,d)>new Date(now.getTime()+7*864e5))y--}
+  if(mo<1||mo>12||d<1||d>31)return null;
+  return y+'-'+p2(mo)+'-'+p2(d);
+}
+const BRANDS=[['ifood','iFood'],['uber','Uber'],['99','99'],['netflix','Netflix'],['spotify','Spotify'],['amazon prime','Amazon Prime'],['amazon','Amazon'],['mercado livre','Mercado Livre'],['mercadolivre','Mercado Livre'],['shopee','Shopee'],['rappi','Rappi'],['magalu','Magalu'],['drogasil','Drogasil'],['raia','Droga Raia'],['carrefour','Carrefour'],['assai','Assaí'],['atacadao','Atacadão'],['americanas','Americanas'],['shein','Shein'],['youtube','YouTube'],['google one','Google One'],['google','Google'],['apple','Apple'],['mcdonalds','McDonald\'s'],['burger king','Burger King'],['subway','Subway'],['disney','Disney+'],['globoplay','Globoplay'],['smartfit','Smart Fit']].sort((a,b)=>b[0].length-a[0].length);
+function cleanDesc(raw){
+  let d=String(raw||'').trim(),inst=null,m;
+  if(m=d.match(/\bPARC(?:ELA|\.)?\s*(\d{1,2})\s*(?:\/|DE)\s*(\d{1,2})/i)){inst=+m[1]+'/'+(+m[2]);d=d.replace(m[0],' ')}
+  else if((m=d.match(/\b(\d{1,2})\s*\/\s*(\d{1,2})\s*$/))&&+m[1]<=+m[2]&&+m[2]>=2&&+m[2]<=48){inst=+m[1]+'/'+(+m[2]);d=d.replace(m[0],' ')}
+  d=d.replace(/\b(COMPRAS?)\s+(NO\s+)?(CARTAO|CARTÃO|CART|DEBITO|DÉBITO|CREDITO|CRÉDITO|DEB|CRED)\b/gi,' ')
+     .replace(/\b(CARTAO|CARTÃO)\s*\d*\b/gi,' ')
+     .replace(/\b\d{2}\/\d{2}(\/\d{2,4})?\b/g,' ').replace(/\*+/g,' ').replace(/\b\d{4,}\b/g,' ')
+     .replace(/\s+(SP|RJ|MG|PR|SC|RS|BR|BRA|DF|GO|BA|PE|CE|ES)\s*$/i,' ').replace(/\s+/g,' ').trim();
+  const n=' '+norm(d).replace(/[^a-z0-9]+/g,' ')+' ';
+  for(const [k,v] of BRANDS){if(n.includes(' '+k+' ')||(k.length>5&&n.includes(' '+k)))return {desc:v,inst}}
+  const small=new Set(['de','da','do','das','dos','e','em','no','na']);
+  d=d.toLowerCase().split(' ').map((w,i)=>small.has(w)&&i>0?w:w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+  return {desc:d||String(raw).trim(),inst};
+}
+const IGNORE_RE=/(pagamento\s+(de\s+)?fatura|pagto\s+fatura|pgto\s+fatura|pag\s+fatura|fatura\s+(cartao|paga)|pagamento\s+(recebido|efetuado|on\s*line|online)|transferencia\s+(entre|propria|mesma)|mesma\s+titularidade|saldo\s+(anterior|do\s+dia|final|parcial)|resgate|aplicacao\s+(rdb|cdb|autom))/;
+async function readText(f){const b=await f.arrayBuffer();try{return new TextDecoder('utf-8',{fatal:true}).decode(b)}catch(e){return new TextDecoder('windows-1252').decode(b)}}
+function parseCSV(text){
+  const first=text.split(/\r?\n/).slice(0,6).join('\n');
+  const cnt=c=>(first.split(c).length-1);const delim=[';',',','\t'].sort((a,b)=>cnt(b)-cnt(a))[0];
+  const rows=[];let row=[],cur='',q=false;
+  for(let i=0;i<text.length;i++){const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cur+='"';i++}else q=false}else cur+=c}
+    else if(c==='"')q=true;
+    else if(c===delim){row.push(cur);cur=''}
+    else if(c==='\n'){row.push(cur);rows.push(row);row=[];cur=''}
+    else if(c!=='\r')cur+=c;}
+  if(cur||row.length){row.push(cur);rows.push(row)}
+  return rows.filter(r=>r.some(x=>x.trim()));
+}
+function csvToRaw(all){
+  let hi=-1,c={};
+  for(let i=0;i<Math.min(all.length,25);i++){
+    const n=all[i].map(x=>norm(x).trim());
+    const d=n.findIndex(x=>/^(data|date|dt)/.test(x)),v=n.findIndex(x=>/^(valor|amount|montante|quantia|value)/.test(x));
+    const db=n.findIndex(x=>/^(debito|saida|debit)/.test(x)),cr=n.findIndex(x=>/^(credito|entrada|credit)/.test(x));
+    if(d>=0&&(v>=0||db>=0||cr>=0)){hi=i;c={d,v,db,cr,s:n.findIndex(x=>/(descri|historico|lancamento|estabelec|memo|detalhe|title|titulo)/.test(x))};break}
+  }
+  const body=all.slice(hi+1);
+  if(hi<0){ // sem cabeçalho: adivinhar pelas colunas
+    const w=Math.max(...all.slice(0,10).map(r=>r.length));c={d:-1,v:-1,db:-1,cr:-1,s:-1};
+    for(let j=0;j<w;j++){const col=all.slice(0,10).map(r=>r[j]||'');
+      if(c.d<0&&col.filter(x=>parseDate(x)).length>=col.length*0.6)c.d=j;
+      else if(c.v<0&&col.filter(x=>/^[^a-z]*[\d.,]+[^a-z]*$/i.test(x.trim())&&!isNaN(parseNum(x))).length>=col.length*0.6)c.v=j}
+    let best=-1,bl=0;for(let j=0;j<w;j++){if(j===c.d||j===c.v)continue;const l=all.slice(0,10).reduce((a,r)=>a+(r[j]||'').length,0);if(l>bl){bl=l;best=j}}c.s=best;
+    if(c.d<0||c.v<0)throw new Error('Não identifiquei as colunas de data e valor. Confira se o arquivo é um extrato em CSV.');
+  }else if(c.s<0){let best=-1,bl=0;const w=all[hi].length;for(let j=0;j<w;j++){if([c.d,c.v,c.db,c.cr].includes(j))continue;const l=body.slice(0,10).reduce((a,r)=>a+(r[j]||'').length,0);if(l>bl){bl=l;best=j}}c.s=best}
+  const out=[];
+  for(const r of body){
+    const date=parseDate(r[c.d]);if(!date)continue;
+    const desc=(r[c.s]||'').trim();if(/^saldo/.test(norm(desc)))continue;
+    let v;
+    if(c.v>=0)v=parseNum(r[c.v]);
+    else{const cr=c.cr>=0?parseNum(r[c.cr]):NaN,db=c.db>=0?parseNum(r[c.db]):NaN;v=(isNaN(cr)?0:Math.abs(cr))-(isNaN(db)?0:Math.abs(db))}
+    if(isNaN(v)||v===0)continue;
+    out.push({date,desc,raw:v});
+  }
+  return out;
+}
+function parseOFX(text){
+  const out=[];const re=/<STMTTRN>([\s\S]*?)(?=<\/STMTTRN>|<STMTTRN>|<\/BANKTRANLIST>|$)/gi;let m;
+  const tag=(b,t)=>{const x=b.match(new RegExp('<'+t+'>\\s*([^<\\r\\n]*)','i'));return x?x[1].trim():''};
+  while(m=re.exec(text)){
+    const b=m[1],date=parseDate(tag(b,'DTPOSTED')),v=parseNum(tag(b,'TRNAMT').replace(/^(-?)/,'$1'));
+    if(!date||isNaN(v))continue;
+    out.push({date,desc:tag(b,'MEMO')||tag(b,'NAME')||'Lançamento',raw:v});
+  }
+  return out;
+}
+async function loadPdfJs(){
+  if(window.pdfjsLib)return;
+  await new Promise((ok,err)=>{const s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';s.onload=ok;s.onerror=()=>err(new Error('Não consegui carregar o leitor de PDF (é preciso internet). Tente exportar em CSV ou OFX.'));document.head.appendChild(s)});
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+async function parsePDF(f){
+  await loadPdfJs();
+  const pdf=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;const lines=[];
+  for(let p=1;p<=pdf.numPages;p++){
+    const tc=await(await pdf.getPage(p)).getTextContent();const ls=[];
+    for(const it of tc.items){if(!it.str.trim())continue;const y=it.transform[5],x=it.transform[4];let L=ls.find(l=>Math.abs(l.y-y)<=3);if(!L){L={y,items:[]};ls.push(L)}L.items.push({x,s:it.str})}
+    ls.sort((a,b)=>b.y-a.y).forEach(l=>lines.push(l.items.sort((a,b)=>a.x-b.x).map(i=>i.s).join(' ').replace(/\s+/g,' ')));
+  }
+  const re=/^\s*(\d{1,2}[\/.\-]\d{1,2}(?:[\/.\-]\d{2,4})?|\d{1,2}\s+(?:de\s+)?(?:jan|fev|mar|abr|mai|jun|jul|ago|set|out|nov|dez)[a-z]*\.?(?:\s+(?:de\s+)?\d{2,4})?)\s+(.+?)\s+([-−]?\s*(?:R\$\s*)?\d{1,3}(?:\.\d{3})*,\d{2}\s*-?)\s*$/i;
+  const out=[];
+  for(const l of lines){const m=l.match(re);if(!m)continue;const date=parseDate(m[1]),v=parseNum(m[3]);if(!date||isNaN(v)||/^(saldo|total|limite|pagamento minimo|vencimento)/.test(norm(m[2])))continue;out.push({date,desc:m[2],raw:v})}
+  return out;
+}
+let IMP=null;
+async function handleFile(f){
+  if(!f)return;const name=f.name.toLowerCase();let rows;
+  try{
+    if(/\.(ofx|qfx)$/.test(name))rows=parseOFX(await readText(f));
+    else if(name.endsWith('.pdf'))rows=await parsePDF(f);
+    else rows=csvToRaw(parseCSV(await readText(f)));
+  }catch(e){toast(e.message||'Erro ao ler o arquivo');return}
+  if(!rows.length){toast(name.endsWith('.pdf')?'Não consegui ler lançamentos neste PDF. Prefira exportar em CSV ou OFX.':'Nenhum lançamento encontrado no arquivo.');return}
+  const neg=rows.filter(r=>r.raw<0).length;
+  let mode=/\.(ofx|qfx)$/.test(name)?'statement':(/fatura|invoice|cartao|nubank/.test(name)||neg<rows.length*0.1?'card':'statement');
+  if(/\.(ofx|qfx)$/.test(name)&&/fatura|cartao/.test(name))mode='statement';
+  IMP={file:f.name,rows,mode,rev:[]};buildReview();render();
+}
+function buildReview(){
+  IMP.rev=IMP.rows.map(r=>{
+    const amt=IMP.mode==='card'?-r.raw:r.raw,type=amt<0?'out':'in',amount=Math.abs(Math.round(amt*100)/100);
+    const cd=cleanDesc(r.desc),ign=IGNORE_RE.test(norm(r.desc));
+    const sug=type==='in'?'Receita':categorize(r.desc+' '+cd.desc);
+    const dup=S.tx.some(t=>t.date===r.date&&Math.abs(t.amount-amount)<0.005&&t.type===type&&(norm(t.desc)===norm(cd.desc)||norm(t.desc).includes(norm(cd.desc))||norm(cd.desc).includes(norm(t.desc))));
+    return {date:r.date,desc:cd.desc,orig:r.desc,inst:cd.inst,amount,type,cat:sug||'Outros',sug:sug||'Outros',unknown:!sug&&type==='out',ign,dup,inc:!ign&&!dup};
+  });
+}
+
+/* ============ cálculos ============ */
+const monthTx=k=>S.tx.filter(t=>t.date.slice(0,7)===k);
+function sumByCat(k){const m=new Map();monthTx(k).filter(t=>t.type==='out').forEach(t=>m.set(t.cat,(m.get(t.cat)||0)+t.amount));return m}
+const total=m=>[...m.values()].reduce((a,b)=>a+b,0);
+
+/* ============ views ============ */
+function donut(entries,tot){
+  let off=25;const R=15.9155;let seg='';
+  entries.forEach(([n,v])=>{const p=tot?v/tot*100:0;seg+=`<circle r="${R}" cx="21" cy="21" fill="none" stroke="${catColor(n)}" stroke-width="6" stroke-dasharray="${p} ${100-p}" stroke-dashoffset="${off}"/>`;off-=p});
+  return `<svg class="donut" viewBox="0 0 42 42"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--in)" stroke-width="6"/>${seg}<text x="21" y="20" text-anchor="middle" font-size="3.2" style="fill:var(--mut)">Gastos</text><text x="21" y="25" text-anchor="middle" font-size="3.6" font-weight="700">${fmt(tot)}</text></svg>`;
+}
+function monthNav(){return `<div class="flex between" style="margin-bottom:12px"><button class="btn ghost sm" data-act="mprev">◀</button><b>${monthLabel(ui.month)}</b><button class="btn ghost sm" data-act="mnext">▶</button></div>`}
+function viewHome(){
+  const k=ui.month,pk=addMonth(k,-1),cur=sumByCat(k),prv=sumByCat(pk),tot=total(cur),ptot=total(prv);
+  const inc=monthTx(k).filter(t=>t.type==='in').reduce((a,t)=>a+t.amount,0);
+  const ent=[...cur.entries()].sort((a,b)=>b[1]-a[1]);
+  const delta=ptot?((tot-ptot)/ptot*100):null;
+  const hasSample=S.tx.some(t=>t.sample);
+  let h=(hasSample?`<div class="banner">Estes são <b>dados de exemplo</b> para você testar. <a href="#" data-act="clearsamples">Limpar exemplos</a></div>`:'')+monthNav();
+  h+=`<div class="grid g4" style="margin-bottom:14px">
+   <div class="card kpi" style="margin:0"><small>Gasto no mês</small><b>${fmt(tot)}</b><div class="sub">${delta==null?'sem mês anterior':`<span class="${delta>0?'up':'down'}">${delta>0?'▲':'▼'} ${pct(Math.abs(delta))}</span> vs mês anterior`}</div></div>
+   <div class="card kpi" style="margin:0"><small>Recebido</small><b style="color:var(--grn)">${fmt(inc)}</b></div>
+   <div class="card kpi" style="margin:0"><small>Saldo</small><b style="color:${inc-tot<0?'var(--red)':'var(--grn)'}">${fmt(inc-tot)}</b></div>
+   <div class="card kpi" style="margin:0"><small>Maior categoria</small><b>${ent[0]?esc(ent[0][0]):'—'}</b><div class="sub">${ent[0]?fmt(ent[0][1])+' · '+pct(ent[0][1]/tot*100):''}</div></div></div>`;
+  if(!ent.length)return h+`<div class="card mut">Nenhum gasto neste mês. Toque em <b>+ Novo gasto</b> ou importe um extrato.</div>`;
+  h+=`<div class="card"><h2>Para onde foi o dinheiro</h2><div class="donutwrap">${donut(ent,tot)}<div class="legend">${ent.map(([n,v])=>`<div style="margin-bottom:9px"><div class="flex between"><span><span class="dot" style="background:${catColor(n)};display:inline-block"></span> ${esc(n)}</span><span><b>${fmt(v)}</b> · ${pct(v/tot*100)}</span></div><div class="bar"><i style="width:${v/tot*100}%;background:${catColor(n)}"></i></div></div>`).join('')}</div></div></div>`;
+  const names=[...new Set([...cur.keys(),...prv.keys()])].sort((a,b)=>(cur.get(b)||0)-(cur.get(a)||0));
+  h+=`<div class="card"><h2>Comparativo: ${monthLabel(pk)} × ${monthLabel(k)}</h2><div class="scroll"><table><tr><th>Categoria</th><th>Anterior</th><th>Atual</th><th>Variação</th></tr>`+names.map(n=>{
+    const a=prv.get(n)||0,b=cur.get(n)||0,d=b-a,dp=a?d/a*100:null,cls=d>0?'up':d<0?'down':'';
+    return `<tr><td><span class="dot" style="background:${catColor(n)};display:inline-block"></span> ${esc(n)}</td><td>${fmt(a)}<br><small>${ptot?pct(a/ptot*100):'—'}</small></td><td>${fmt(b)}<br><small>${tot?pct(b/tot*100):'—'}</small></td><td class="${cls}">${d>0?'+':''}${fmt(d)}<br><small class="${cls}">${dp==null?(b?'novo':'—'):(d>0?'+':'')+pct(dp)}</small></td></tr>`}).join('')
+    +`<tr><td><b>Total</b></td><td><b>${fmt(ptot)}</b></td><td><b>${fmt(tot)}</b></td><td class="${tot>ptot?'up':'down'}"><b>${tot-ptot>0?'+':''}${fmt(tot-ptot)}</b><br><small class="${tot>ptot?'up':'down'}">${ptot?(tot>ptot?'+':'')+pct((tot-ptot)/ptot*100):''}</small></td></tr></table></div></div>`;
+  const bud=Object.entries(S.budgets).filter(([c,l])=>l>0&&S.cats.some(x=>x.name===c));
+  if(bud.length)h+=`<div class="card"><h2>Limites por categoria</h2>`+bud.map(([c,l])=>{const sp=cur.get(c)||0,p=sp/l*100,col=p>=100?'var(--red)':p>=80?'var(--amb)':'var(--grn)';
+    return `<div style="margin-bottom:10px"><div class="flex between"><span>${esc(c)}</span><span><b>${fmt(sp)}</b> de ${fmt(l)} · ${pct(p)}</span></div><div class="bar"><i style="width:${Math.min(p,100)}%;background:${col}"></i></div>${p>=100?`<small class="up">⚠ Limite ultrapassado em ${fmt(sp-l)}</small>`:p>=80?`<small style="color:var(--amb)">⚠ Você já usou mais de 80% do limite</small>`:''}</div>`}).join('')+`</div>`;
+  return h;
+}
+function filteredTx(){
+  const f=ui.f,mk=f.month==='cur'?ui.month:f.month;
+  return S.tx.filter(t=>(mk==='all'||t.date.slice(0,7)===mk)&&(!f.type||t.type===f.type)&&(!f.cat||t.cat===f.cat)&&(!f.pay||t.pay===f.pay)&&(!f.q||norm(t.desc).includes(norm(f.q)))).sort((a,b)=>b.date.localeCompare(a.date));
+}
+function listBody(){
+  const l=filteredTx();if(!l.length)return `<div class="card mut">Nenhum lançamento encontrado.</div>`;
+  const out=l.filter(t=>t.type==='out').reduce((a,t)=>a+t.amount,0),inn=l.filter(t=>t.type==='in').reduce((a,t)=>a+t.amount,0);
+  return `<div class="card"><div class="flex between mut" style="margin-bottom:6px"><span>${l.length} lançamentos</span><span>Gastos <b>${fmt(out)}</b> · Receitas <b style="color:var(--grn)">${fmt(inn)}</b></span></div>`+l.map(t=>`<div class="row" data-act="edit" data-id="${t.id}"><span class="dot" style="background:${catColor(t.cat)}"></span><div class="grow"><b>${esc(t.desc)}</b>${t.inst?` <span class="chip">parcela ${esc(t.inst)}</span>`:''}<small>${fdate(t.date)} · ${esc(t.cat)} · ${esc(t.pay||'')}</small></div><div class="amt ${t.type}">${t.type==='in'?'+':'−'} ${fmt(t.amount)}</div></div>`).join('')+`</div>`;
+}
+function viewList(){
+  const f=ui.f,months=[...new Set(S.tx.map(t=>t.date.slice(0,7)).concat(ui.month))].sort().reverse();
+  return `<h1>Lançamentos</h1><div class="filters">
+   <select data-in="f.month"><option value="cur" ${f.month==='cur'?'selected':''}>${monthLabel(ui.month)} (atual)</option><option value="all" ${f.month==='all'?'selected':''}>Todos os meses</option>${months.map(m=>`<option value="${m}" ${f.month===m?'selected':''}>${monthLabel(m)}</option>`).join('')}</select>
+   <select data-in="f.type"><option value="">Gastos e receitas</option><option value="out" ${f.type==='out'?'selected':''}>Só gastos</option><option value="in" ${f.type==='in'?'selected':''}>Só receitas</option></select>
+   <select data-in="f.cat"><option value="">Todas categorias</option>${S.cats.map(c=>`<option ${f.cat===c.name?'selected':''}>${esc(c.name)}</option>`).join('')}<option ${f.cat==='Receita'?'selected':''}>Receita</option></select>
+   <select data-in="f.pay"><option value="">Todo pagamento</option>${PAYS.map(p=>`<option ${f.pay===p?'selected':''}>${p}</option>`).join('')}</select>
+   <input data-in="f.q" placeholder="Buscar descrição…" value="${esc(f.q)}"></div><div id="listBody">${listBody()}</div>`;
+}
+function viewCats(){
+  return `<h1>Categorias e regras</h1><div class="card"><h2>Nova categoria</h2><div class="flex"><input id="nc-name" placeholder="Nome" style="flex:1"><input type="color" id="nc-color" value="#6366f1"><button class="btn" data-act="addcat">Adicionar</button></div></div>`+
+  S.cats.map((c,i)=>{const rules=S.rules.filter(r=>r.cat===c.name);return `<div class="card"><div class="flex"><input type="color" value="${c.color}" data-ch="catcolor" data-i="${i}"><input value="${esc(c.name)}" data-ch="catname" data-i="${i}" style="flex:1" ${c.name==='Outros'?'disabled':''}>${c.name==='Outros'?'':`<button class="btn danger sm" data-act="delcat" data-i="${i}">Excluir</button>`}</div>
+   <label>Limite mensal (R$) — deixe vazio para não limitar</label><input inputmode="decimal" value="${S.budgets[c.name]||''}" data-ch="budget" data-i="${i}" placeholder="ex.: 800,00">
+   <label>Palavras-chave (descrição que contém…)</label><div>${rules.map(r=>`<span class="chip">${esc(r.kw)}<span class="x" data-act="delrule" data-kw="${esc(r.kw)}">✕</span></span>`).join('')||'<small>nenhuma</small>'}</div>
+   <div class="flex" style="margin-top:8px"><input id="kw-${i}" placeholder="nova palavra-chave" style="flex:1"><button class="btn ghost sm" data-act="addrule" data-i="${i}">Adicionar</button></div></div>`}).join('');
+}
+function viewImport(){
+  if(!IMP)return `<h1>Importar extrato ou fatura</h1><div class="card"><div class="drop" id="drop" data-act="pick"><div style="font-size:32px">📄</div><b>Toque para escolher o arquivo</b> ou arraste aqui<br><small>CSV, OFX ou PDF · extrato bancário ou fatura de cartão</small></div><p class="mut" style="font-size:13px">O arquivo é lido apenas neste aparelho, nada é enviado. CSV e OFX são os formatos mais confiáveis; PDF depende do layout do banco e precisa de internet para carregar o leitor.</p></div>`;
+  const r=IMP.rev,sel=r.filter(x=>x.inc).length;
+  return `<h1>Revisar importação</h1><div class="card"><div class="flex between"><span><b>${esc(IMP.file)}</b> · ${r.length} linhas</span><button class="btn ghost sm" data-act="cancelimp">Cancelar</button></div>
+   <label>Tipo de arquivo (define o sinal dos valores)</label><select data-ch="impmode"><option value="statement" ${IMP.mode==='statement'?'selected':''}>Extrato bancário (negativo = saída)</option><option value="card" ${IMP.mode==='card'?'selected':''}>Fatura de cartão (positivo = gasto)</option></select>
+   <div class="hint">Linhas marcadas <span class="chip bad">ignorar</span> (pagamento de fatura, transferência própria) e <span class="chip warn">duplicado</span> vêm desmarcadas. <span class="chip warn">revisar</span> = categoria não reconhecida.</div>
+   <div class="scroll"><table class="rv"><tr><th></th><th>Data</th><th>Descrição</th><th>Valor</th><th>Tipo</th><th>Categoria</th></tr>`+r.map((x,i)=>`<tr><td><input type="checkbox" data-ch="rv" data-i="${i}" data-k="inc" ${x.inc?'checked':''}></td><td><input type="date" value="${x.date}" data-ch="rv" data-i="${i}" data-k="date" style="width:132px"></td><td><input value="${esc(x.desc)}" data-ch="rv" data-i="${i}" data-k="desc" style="min-width:150px"><small>${esc(x.orig)}</small>${x.inst?` <span class="chip">parcela ${esc(x.inst)}</span>`:''}${x.ign?' <span class="chip bad">ignorar</span>':''}${x.dup?' <span class="chip warn">duplicado</span>':''}${x.unknown?' <span class="chip warn">revisar</span>':''}</td><td style="white-space:nowrap">${x.type==='in'?'+':'−'} ${fmt(x.amount)}</td><td><select data-ch="rv" data-i="${i}" data-k="type" style="width:84px"><option value="out" ${x.type==='out'?'selected':''}>Gasto</option><option value="in" ${x.type==='in'?'selected':''}>Receita</option></select></td><td><select data-ch="rv" data-i="${i}" data-k="cat" style="min-width:130px">${(x.type==='in'?['Receita']:S.cats.map(c=>c.name)).map(c=>`<option ${x.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select></td></tr>`).join('')+`</table></div>
+   <div class="flex between" style="margin-top:12px"><span class="mut">${sel} selecionadas</span><button class="btn" data-act="doimport" ${sel?'':'disabled'}>Importar selecionadas</button></div></div>`;
+}
+function viewSettings(){
+  return `<h1>Configurações</h1><div class="card"><h2>Aparência</h2><select data-ch="theme"><option value="auto" ${S.theme==='auto'?'selected':''}>Automático (seguir o aparelho)</option><option value="light" ${S.theme==='light'?'selected':''}>Claro</option><option value="dark" ${S.theme==='dark'?'selected':''}>Escuro</option></select></div>
+  <div class="card"><h2>Seus dados</h2><p class="mut" style="margin-top:0">Tudo fica salvo só neste navegador. Faça backup de vez em quando. Limpar os dados do navegador apaga o orçamento.</p><div class="flex"><button class="btn ghost" data-act="expcsv">Exportar CSV</button><button class="btn ghost" data-act="expjson">Backup (JSON)</button><button class="btn ghost" data-act="impjson">Restaurar backup</button></div></div>
+  <div class="card"><h2>Limpeza</h2><div class="flex"><button class="btn ghost" data-act="clearsamples">Limpar dados de exemplo</button><button class="btn danger" data-act="wipe">Apagar tudo</button></div></div>`;
+}
+function render(){
+  const tabs=[['home','🏠','Início'],['list','🧾','Lançamentos'],['cats','🏷️','Categorias'],['imp','📥','Importar'],['set','⚙️','Config.']];
+  $('#nav').innerHTML=tabs.map(([k,i,l])=>`<button class="${ui.tab===k?'on':''}" data-act="tab" data-v="${k}"><b>${i}</b>${l}</button>`).join('');
+  $('#view').innerHTML={home:viewHome,list:viewList,cats:viewCats,imp:viewImport,set:viewSettings}[ui.tab]();
+  document.documentElement.dataset.theme=S.theme==='auto'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):S.theme;
+  const dz=$('#drop');if(dz){dz.ondragover=e=>{e.preventDefault();dz.classList.add('over')};dz.ondragleave=()=>dz.classList.remove('over');dz.ondrop=e=>{e.preventDefault();dz.classList.remove('over');handleFile(e.dataTransfer.files[0])}}
+  document.querySelector('.fab').classList.toggle('hidden',!!document.querySelector('#sheet:not(.hidden)'));
+}
+
+/* ============ lançamento (texto / voz / manual) ============ */
+let D=null,rec=null;
+function catOptions(type,sel){return (type==='in'?['Receita']:S.cats.map(c=>c.name)).map(c=>`<option ${c===sel?'selected':''}>${esc(c)}</option>`).join('')}
+function openTx(id){
+  const t=id?S.tx.find(x=>x.id===id):null;
+  D={id:t?t.id:null,type:t?t.type:'out',base:t?t.cat:null,touched:!!t,inst:t?t.inst:''};
+  $('#sheetBody').innerHTML=`<div class="flex between"><h2 style="margin:0">${t?'Editar lançamento':'Novo lançamento'}</h2><button class="btn ghost sm" data-act="closesheet">✕</button></div>
+   ${t?'':`<label>Fale ou escreva (ex.: “mercado 150 ontem”, “uber 23,50 hoje”, “academia 99,90 dia 5”)</label><div class="flex" style="flex-wrap:nowrap"><input id="f-text" placeholder="Digite aqui…" autocomplete="off"><button class="mic" id="mic" data-act="voice" title="Falar">🎤</button></div><div class="hint hidden" id="f-hint"></div>`}
+   <label>Tipo</label><div class="seg"><button data-act="settype" data-v="out" class="${D.type==='out'?'on':''}">Gasto</button><button data-act="settype" data-v="in" class="${D.type==='in'?'on':''}">Receita</button></div>
+   <div class="grid g2" style="gap:0 10px"><div><label>Valor (R$)</label><input id="f-amount" inputmode="decimal" placeholder="0,00" value="${t?String(t.amount).replace('.',','):''}"></div><div><label>Data</label><input type="date" id="f-date" value="${t?t.date:iso(new Date())}"></div></div>
+   <label>Descrição</label><input id="f-desc" value="${t?esc(t.desc):''}" placeholder="ex.: Supermercado">
+   <div class="grid g2" style="gap:0 10px"><div><label>Categoria</label><select id="f-cat">${catOptions(D.type,t?t.cat:'Outros')}</select></div><div><label>Pagamento</label><select id="f-pay">${PAYS.map(p=>`<option ${t&&t.pay===p?'selected':''}>${p}</option>`).join('')}</select></div></div>
+   <div class="flex between" style="margin-top:16px">${t?`<button class="btn danger" data-act="deltx">Excluir</button>`:'<span></span>'}<button class="btn" data-act="savetx">Salvar</button></div>`;
+  $('#sheet').classList.remove('hidden');render();
+  if(!t)setTimeout(()=>$('#f-text')&&$('#f-text').focus(),50);
+}
+function closeSheet(){if(rec){try{rec.stop()}catch(e){}}$('#sheet').classList.add('hidden');D=null;render()}
+function applyText(){
+  const txt=$('#f-text').value.trim();if(!txt)return;const p=parseNatural(txt),h=$('#f-hint');
+  D.type=p.type;document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b.dataset.v===p.type));
+  if(p.amount!=null)$('#f-amount').value=String(p.amount).replace('.',',');
+  $('#f-date').value=p.date;$('#f-desc').value=p.desc;
+  $('#f-cat').innerHTML=catOptions(p.type,p.cat||'Outros');
+  D.base=p.cat;
+  h.classList.remove('hidden');
+  h.innerHTML=p.amount==null?`⚠ Não encontrei o valor. Digite o valor ou fale de novo.`:`Entendi: <b>${p.type==='in'?'Receita':'Gasto'}</b> de <b>${fmt(p.amount)}</b> em <b>${esc(p.desc||'—')}</b>, dia <b>${fdate(p.date)}</b>, categoria <b>${esc(p.cat||'Outros')}</b>. Confira e toque em Salvar.`;
+}
+function startVoice(){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){toast('Este navegador não suporta voz. Use o campo de texto (Chrome, Edge ou Safari).');return}
+  const mic=$('#mic');if(rec&&mic.classList.contains('rec')){rec.stop();return}
+  rec=new SR();rec.lang='pt-BR';rec.interimResults=true;rec.maxAlternatives=1;
+  rec.onresult=e=>{let t='';for(const r of e.results)t+=r[0].transcript;$('#f-text').value=t;if(e.results[e.results.length-1].isFinal)applyText()};
+  rec.onerror=e=>toast(e.error==='not-allowed'?'Permita o uso do microfone no navegador.':'Erro no microfone: '+e.error);
+  rec.onend=()=>{const m=$('#mic');if(m)m.classList.remove('rec');if($('#f-text'))applyText()};
+  mic.classList.add('rec');try{rec.start()}catch(e){mic.classList.remove('rec')}
+}
+async function saveTx(){
+  const amount=parseNum($('#f-amount').value),desc=$('#f-desc').value.trim(),date=$('#f-date').value,cat=$('#f-cat').value,pay=$('#f-pay').value;
+  if(!(amount>0)){toast('Informe um valor maior que zero.');return}
+  if(!date){toast('Informe a data.');return}
+  if(!desc){toast('Informe a descrição.');return}
+  const type=D.type,rec2={id:D.id||uid(),date,desc,amount:Math.round(amount*100)/100,type,cat,pay,inst:D.inst||''};
+  const base=D.base,id=D.id;
+  if(id){const i=S.tx.findIndex(x=>x.id===id);S.tx[i]=rec2}else S.tx.push(rec2);
+  save();
+  if(type==='out'&&base&&cat!==base){
+    const kw=learnKeyword(desc);
+    if(kw&&await ask(`Aplicar <b>${esc(kw)}</b> → <b>${esc(cat)}</b> aos gastos semelhantes e aprender para os próximos?`,'Aplicar','Só este')){
+      addRule(kw,cat);S.tx.forEach(x=>{if(x.type==='out'&&x.id!==rec2.id&&norm(x.desc).includes(kw))x.cat=cat});save();toast('Regra salva.');
+    }
+  }
+  ui.month=date.slice(0,7);closeSheet();toast(id?'Lançamento atualizado.':'Lançamento salvo.');
+}
+
+/* ============ ações ============ */
+const ACT={
+  tab(el){ui.tab=el.dataset.v;render();scrollTo(0,0)},
+  new(){openTx()},edit(el){openTx(el.dataset.id)},closesheet(){closeSheet()},voice(){startVoice()},savetx(){saveTx()},
+  settype(el){D.type=el.dataset.v;document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b===el));$('#f-cat').innerHTML=catOptions(D.type,D.type==='in'?'Receita':'Outros')},
+  async deltx(){if(await ask('Excluir este lançamento?','Excluir')){S.tx=S.tx.filter(x=>x.id!==D.id);save();closeSheet();toast('Excluído.')}},
+  mprev(){ui.month=addMonth(ui.month,-1);render()},mnext(){ui.month=addMonth(ui.month,1);render()},
+  clearsamples(el,e){e.preventDefault();S.tx=S.tx.filter(t=>!t.sample);save();render();toast('Exemplos removidos.')},
+  addcat(){const n=$('#nc-name').value.trim();if(!n)return;if(S.cats.some(c=>norm(c.name)===norm(n))){toast('Essa categoria já existe.');return}S.cats.splice(S.cats.length-1,0,{name:n,color:$('#nc-color').value});save();render()},
+  async delcat(el){const c=S.cats[+el.dataset.i];if(await ask(`Excluir <b>${esc(c.name)}</b>? Os lançamentos passam para “Outros”.`,'Excluir')){S.tx.forEach(t=>{if(t.cat===c.name)t.cat='Outros'});S.rules=S.rules.filter(r=>r.cat!==c.name);delete S.budgets[c.name];S.cats.splice(+el.dataset.i,1);save();render()}},
+  addrule(el){const i=+el.dataset.i,inp=$('#kw-'+i),kw=inp.value.trim();if(!kw)return;addRule(kw,S.cats[i].name);save();render()},
+  delrule(el){S.rules=S.rules.filter(r=>r.kw!==el.dataset.kw);save();render()},
+  pick(){$('#file').value='';$('#file').click()},cancelimp(){IMP=null;render()},
+  async doimport(){
+    const sel=IMP.rev.filter(x=>x.inc);let learned=new Map();
+    sel.forEach(x=>{S.tx.push({id:uid(),date:x.date,desc:x.desc,amount:x.amount,type:x.type,cat:x.cat,pay:IMP.mode==='card'?'Crédito':'Débito',inst:x.inst||'',imp:true});if(x.type==='out'&&x.cat!==x.sug){const kw=learnKeyword(x.desc);if(kw)learned.set(kw,x.cat)}});
+    const last=sel.map(x=>x.date).sort().pop();save();IMP=null;ui.month=last.slice(0,7);ui.tab='home';render();toast(sel.length+' lançamentos importados.');
+    if(learned.size&&await ask(`Você corrigiu ${learned.size} categoria(s) na revisão. Salvar como regras para as próximas importações?`,'Salvar regras','Não')){learned.forEach((c,k)=>addRule(k,c));save();toast('Regras salvas.')}
+  },
+  expcsv(){const rows=[['Data','Tipo','Descrição','Categoria','Pagamento','Valor']].concat(S.tx.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(t=>[fdate(t.date),t.type==='in'?'Receita':'Gasto',t.desc,t.cat,t.pay||'',(t.type==='in'?'':'-')+t.amount.toFixed(2).replace('.',',')]));download('orcamento.csv','﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\r\n'),'text/csv')},
+  expjson(){download('backup-orcamento-'+iso(new Date())+'.json',JSON.stringify(S),'application/json')},
+  impjson(){$('#bkfile').value='';$('#bkfile').click()},
+  async wipe(){if(await ask('Apagar <b>todos</b> os lançamentos, categorias e regras? Não dá para desfazer.','Apagar tudo')){S=fresh();S.tx=[];save();render();toast('Tudo apagado.')}}
+};
+const CH={
+  theme(el){S.theme=el.value;save();render()},
+  catcolor(el){S.cats[+el.dataset.i].color=el.value;save()},
+  catname(el){const i=+el.dataset.i,old=S.cats[i].name,nw=el.value.trim();if(!nw||nw===old){el.value=old;return}if(S.cats.some((c,j)=>j!==i&&norm(c.name)===norm(nw))){toast('Já existe categoria com esse nome.');el.value=old;return}
+    S.cats[i].name=nw;S.tx.forEach(t=>{if(t.cat===old)t.cat=nw});S.rules.forEach(r=>{if(r.cat===old)r.cat=nw});if(S.budgets[old]!=null){S.budgets[nw]=S.budgets[old];delete S.budgets[old]}save();render()},
+  budget(el){const c=S.cats[+el.dataset.i].name,v=parseNum(el.value);if(v>0)S.budgets[c]=v;else delete S.budgets[c];save()},
+  impmode(el){IMP.mode=el.value;buildReview();render()},
+  rv(el){const x=IMP.rev[+el.dataset.i],k=el.dataset.k;
+    if(k==='inc')x.inc=el.checked;else if(k==='date')x.date=el.value||x.date;else if(k==='desc')x.desc=el.value;
+    else if(k==='type'){x.type=el.value;x.cat=x.type==='in'?'Receita':(x.sug==='Receita'?'Outros':x.sug);x.unknown=false}
+    else if(k==='cat'){x.cat=el.value;x.unknown=false}
+    if(k==='inc'||k==='type'||k==='cat')render()}
+};
+document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const f=ACT[el.dataset.act];if(f){if(el.tagName==='A')e.preventDefault();f(el,e)}});
+document.addEventListener('change',e=>{const el=e.target.closest('[data-ch]');if(el&&CH[el.dataset.ch])CH[el.dataset.ch](el)});
+document.addEventListener('input',e=>{
+  const el=e.target;
+  if(el.dataset.in){const k=el.dataset.in.split('.')[1];ui.f[k]=el.value;if(k==='q')$('#listBody').innerHTML=listBody();else render()}
+  if(el.id==='f-text'){clearTimeout(window._pt);window._pt=setTimeout(applyText,450)}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='f-text'){e.preventDefault();applyText()}if(e.key==='Escape'&&D)closeSheet()});
+$('#file').addEventListener('change',e=>handleFile(e.target.files[0]));
+$('#bkfile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await readText(f));if(!j||!Array.isArray(j.tx)||!Array.isArray(j.cats))throw 0;if(await ask('Substituir os dados atuais por este backup?','Restaurar')){S=j;save();render();toast('Backup restaurado.')}}catch(err){toast('Arquivo de backup inválido.')}});
+$('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')closeSheet()});
+if(matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener&&matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(S.theme==='auto')render()});
+save();render();
+if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+</script>
+</body>
+</html>
