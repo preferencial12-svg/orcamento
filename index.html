@@ -64,6 +64,7 @@ label{display:block;font-size:12px;color:var(--mut);margin:8px 0 3px}
 .banner{background:var(--in);border:1px dashed var(--bd);border-radius:12px;padding:10px 12px;margin-bottom:14px;font-size:13px}
 .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}
 .x{cursor:pointer;margin-left:4px;opacity:.7}
+.eye{background:none;border:0;cursor:pointer;color:var(--mut);padding:2px 4px;line-height:0;border-radius:8px}.eye svg{width:20px;height:20px}.eye:active{background:var(--in)}
 </style>
 </head>
 <body>
@@ -319,17 +320,21 @@ function donut(entries,tot){
   return `<svg class="donut" viewBox="0 0 42 42"><circle r="${R}" cx="21" cy="21" fill="none" stroke="var(--in)" stroke-width="6"/>${seg}<text x="21" y="20" text-anchor="middle" font-size="3.2" style="fill:var(--mut)">Gastos</text><text x="21" y="25" text-anchor="middle" font-size="3.6" font-weight="700">${fmt(tot)}</text></svg>`;
 }
 function monthNav(){return `<div class="flex between" style="margin-bottom:12px"><button class="btn ghost sm" data-act="mprev">◀</button><b>${monthLabel(ui.month)}</b><button class="btn ghost sm" data-act="mnext">▶</button></div>`}
+const MASK='R$ ••••••';
+const EYE_ON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
 function viewHome(){
   const k=ui.month,pk=addMonth(k,-1),cur=sumByCat(k),prv=sumByCat(pk),tot=total(cur),ptot=total(prv);
   const inc=monthTx(k).filter(t=>t.type==='in').reduce((a,t)=>a+t.amount,0);
   const ent=[...cur.entries()].sort((a,b)=>b[1]-a[1]);
   const delta=ptot?((tot-ptot)/ptot*100):null;
+  const hid=!!S.hideBal;
   const hasSample=S.tx.some(t=>t.sample);
   let h=(hasSample?`<div class="banner">Estes são <b>dados de exemplo</b> para você testar. <a href="#" data-act="clearsamples">Limpar exemplos</a></div>`:'')+monthNav();
   h+=`<div class="grid g4" style="margin-bottom:14px">
    <div class="card kpi" style="margin:0"><small>Gasto no mês</small><b>${fmt(tot)}</b><div class="sub">${delta==null?'sem mês anterior':`<span class="${delta>0?'up':'down'}">${delta>0?'▲':'▼'} ${pct(Math.abs(delta))}</span> vs mês anterior`}</div></div>
-   <div class="card kpi" style="margin:0"><small>Recebido</small><b style="color:var(--grn)">${fmt(inc)}</b></div>
-   <div class="card kpi" style="margin:0"><small>Saldo</small><b style="color:${inc-tot<0?'var(--red)':'var(--grn)'}">${fmt(inc-tot)}</b></div>
+   <div class="card kpi" style="margin:0"><div class="flex between" style="flex-wrap:nowrap"><small>Recebido</small><button class="eye" data-act="togglebal" aria-label="${hid?'Mostrar valores':'Esconder valores'}" title="${hid?'Mostrar':'Esconder'} recebido e saldo">${hid?EYE_OFF:EYE_ON}</button></div><b style="color:${hid?'var(--tx)':'var(--grn)'}">${hid?MASK:fmt(inc)}</b></div>
+   <div class="card kpi" style="margin:0"><small>Saldo</small><b style="color:${hid?'var(--tx)':(inc-tot<0?'var(--red)':'var(--grn)')}">${hid?MASK:fmt(inc-tot)}</b></div>
    <div class="card kpi" style="margin:0"><small>Maior categoria</small><b>${ent[0]?esc(ent[0][0]):'—'}</b><div class="sub">${ent[0]?fmt(ent[0][1])+' · '+pct(ent[0][1]/tot*100):''}</div></div></div>`;
   if(!ent.length)return h+`<div class="card mut">Nenhum gasto neste mês. Toque em <b>+ Novo gasto</b> ou importe um extrato.</div>`;
   h+=`<div class="card"><h2>Para onde foi o dinheiro</h2><div class="donutwrap">${donut(ent,tot)}<div class="legend">${ent.map(([n,v])=>`<div style="margin-bottom:9px"><div class="flex between"><span><span class="dot" style="background:${catColor(n)};display:inline-block"></span> ${esc(n)}</span><span><b>${fmt(v)}</b> · ${pct(v/tot*100)}</span></div><div class="bar"><i style="width:${v/tot*100}%;background:${catColor(n)}"></i></div></div>`).join('')}</div></div></div>`;
@@ -449,6 +454,7 @@ async function saveTx(){
 /* ============ ações ============ */
 const ACT={
   tab(el){ui.tab=el.dataset.v;render();scrollTo(0,0)},
+  togglebal(){S.hideBal=!S.hideBal;save();render()},
   new(){openTx()},edit(el){openTx(el.dataset.id)},closesheet(){closeSheet()},voice(){startVoice()},savetx(){saveTx()},
   settype(el){D.type=el.dataset.v;document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('on',b===el));$('#f-cat').innerHTML=catOptions(D.type,D.type==='in'?'Receita':'Outros')},
   async deltx(){if(await ask('Excluir este lançamento?','Excluir')){S.tx=S.tx.filter(x=>x.id!==D.id);save();closeSheet();toast('Excluído.')}},
