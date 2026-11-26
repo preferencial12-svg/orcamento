@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Meu Orçamento</title>
+<title>Barretitto</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#2563eb">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -65,9 +65,18 @@ label{display:block;font-size:12px;color:var(--mut);margin:8px 0 3px}
 .filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px}
 .x{cursor:pointer;margin-left:4px;opacity:.7}
 .eye{background:none;border:0;cursor:pointer;color:var(--mut);padding:2px 4px;line-height:0;border-radius:8px}.eye svg{width:20px;height:20px}.eye:active{background:var(--in)}
+.auth{position:fixed;inset:0;background:var(--bg);z-index:30;display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto}
+.auth .box{width:100%;max-width:380px}.auth h1{text-align:center;margin:0 0 4px;font-size:28px}.auth .sub{text-align:center;color:var(--mut);margin:0 0 18px}
+.auth label{display:block;margin:10px 0 4px;font-size:13px;color:var(--mut)}.auth .btn{width:100%;margin-top:14px}.auth .lnk{display:block;text-align:center;margin-top:14px;color:var(--pri);font-size:14px;cursor:pointer;background:none;border:0;width:100%}
+.auth .msg{margin-top:12px;font-size:14px;text-align:center}.auth .msg.err{color:var(--red)}.auth .msg.ok{color:var(--grn)}
+#syncdot{position:fixed;top:max(8px,env(safe-area-inset-top));right:10px;width:12px;height:12px;border-radius:50%;background:#9ca3af;z-index:15;border:2px solid var(--bg);cursor:pointer}
+#syncdot.ok{background:var(--grn)}#syncdot.pend{background:var(--amb)}#syncdot.err{background:var(--red)}
 </style>
+<script src="supabase.js"></script>
 </head>
 <body>
+<div id="syncdot" class="hidden" data-act="syncnow" title="Sincronização"></div>
+<div class="auth hidden" id="auth"></div>
 <div class="app" id="view"></div>
 <button class="fab" data-act="new">+ Novo gasto</button>
 <nav id="nav"></nav>
@@ -110,10 +119,172 @@ Compras:'amazon,mercado livre,mercadolivre,shopee,magalu,magazine luiza,american
 'Dívidas/Cartão':'juros,iof,anuidade,emprestimo,financiamento,encargos,multa,cheque especial',
 'Impostos e Taxas':'ipva,irpf,das,darf,imposto,taxa,tarifa,licenciamento,simples nacional,inss',
 Investimentos:'cdb,tesouro,corretora,b3,fii,acoes,poupanca,previdencia'};
-const KEY='orcamento_pessoal_v1';
-let MEM=null;
-function load(){try{const j=JSON.parse(localStorage.getItem(KEY));if(j&&Array.isArray(j.tx))return j}catch(e){}return fresh()}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){MEM=S}}
+const LEGACY_KEY='orcamento_pessoal_v1';
+const SB_URL='https://dxxlirsjkuxiczirohfx.supabase.co',SB_KEY='sb_publishable_9zF-SWMc6LHow4y3IrGZFg_ir1yI8ic';
+const HASH0=location.hash||'';
+const sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+let USER=null,RECOV=/type=(invite|recovery)/.test(HASH0),LEGACY_DONE=false;
+let SNAP={tx:{},st:''};
+const SYNC={busy:false,again:false,err:'',pull:'1970-01-01T00:00:00Z',t:null,p:null};
+const lkey=()=>'barretitto_'+USER.id;
+function persist(){if(!USER)return;try{localStorage.setItem(lkey(),JSON.stringify({S,SNAP,pull:SYNC.pull,legacyDone:LEGACY_DONE}))}catch(e){}}
+function save(){if(!USER)return;persist();clearTimeout(SYNC.t);SYNC.t=setTimeout(sync,700);setStatus()}
+const txOut=t=>({id:t.id,date:t.date,descr:t.desc,amount:Number(t.amount),type:t.type,cat:t.cat,pay:t.pay||null,inst:t.inst||null});
+const txIn=r=>({id:r.id,date:r.date,desc:r.descr,amount:Number(r.amount),type:r.type,cat:r.cat,pay:r.pay||'',inst:r.inst||''});
+const stateOut=()=>JSON.stringify({cats:S.cats,rules:S.rules,budgets:S.budgets,prefs:{theme:S.theme||'auto',hideBal:!!S.hideBal}});
+function diff(){
+  const cur={};S.tx.filter(t=>!t.sample).forEach(t=>{cur[t.id]=JSON.stringify(txOut(t))});
+  const up=Object.keys(cur).filter(id=>SNAP.tx[id]!==cur[id]),del=Object.keys(SNAP.tx).filter(id=>!(id in cur));
+  return{cur,up,del,st:stateOut(),stDirty:stateOut()!==SNAP.st};
+}
+const pendingN=()=>{const d=diff();return d.up.length+d.del.length+(d.stDirty?1:0)};
+function setStatus(){
+  const el=$('#syncdot');if(!el)return;
+  if(!USER){el.classList.add('hidden');return}
+  el.classList.remove('hidden','ok','pend','err');
+  const n=pendingN();let txt;
+  if(SYNC.err){el.classList.add('err');txt='Erro ao sincronizar: '+SYNC.err}
+  else if(n){el.classList.add('pend');txt=(navigator.onLine?'Sincronizando…':'Sem internet')+' · '+n+' alteração(ões) pendente(s)'}
+  else{el.classList.add('ok');txt='Tudo sincronizado'}
+  el.title=txt;const s=$('#syncTxt');if(s)s.textContent=txt;
+}
+function sync(){
+  if(!USER||!navigator.onLine){setStatus();return Promise.resolve()}
+  if(SYNC.busy){SYNC.again=true;return SYNC.p}
+  SYNC.busy=true;SYNC.p=(async()=>{
+    try{
+      SYNC.err='';
+      const d=diff();
+      const rows=[...d.up.map(id=>({...txOut(S.tx.find(t=>t.id===id)),deleted:false,user_id:USER.id})),...d.del.map(id=>({...JSON.parse(SNAP.tx[id]),deleted:true,user_id:USER.id}))];
+      for(let i=0;i<rows.length;i+=200){const{error}=await sb.from('transactions').upsert(rows.slice(i,i+200),{onConflict:'user_id,id'});if(error)throw error}
+      d.up.forEach(id=>{SNAP.tx[id]=d.cur[id]});d.del.forEach(id=>{delete SNAP.tx[id]});
+      if(d.stDirty){const{error}=await sb.from('app_state').upsert({user_id:USER.id,...JSON.parse(d.st)},{onConflict:'user_id'});if(error)throw error;SNAP.st=d.st}
+      const ch=await pullAll();
+      if(ch&&!D&&!IMP)render();
+    }catch(e){
+      SYNC.err=(e&&e.message)||'falha';
+      if(/jwt|token|expired/i.test(SYNC.err)){try{await sb.auth.refreshSession()}catch(_){}}
+    }
+    SYNC.busy=false;persist();setStatus();
+    if(SYNC.again){SYNC.again=false;setTimeout(sync,200)}
+  })();
+  return SYNC.p;
+}
+async function pullState(force){
+  const{data,error}=await sb.from('app_state').select('*').eq('user_id',USER.id).maybeSingle();
+  if(error)throw error;
+  if(!data)return{found:false,changed:false};
+  if(!force&&stateOut()!==SNAP.st)return{found:true,changed:false};
+  const before=stateOut();
+  if(Array.isArray(data.cats)&&data.cats.length)S.cats=data.cats;
+  if(Array.isArray(data.rules))S.rules=data.rules;
+  if(data.budgets&&typeof data.budgets==='object')S.budgets=data.budgets;
+  if(data.prefs){S.theme=data.prefs.theme||'auto';S.hideBal=!!data.prefs.hideBal}
+  SNAP.st=stateOut();
+  return{found:true,changed:before!==SNAP.st};
+}
+async function pullAll(){
+  let changed=false,since=SYNC.pull;
+  for(;;){
+    const{data,error}=await sb.from('transactions').select('*').gte('updated_at',since).order('updated_at').limit(1000);
+    if(error)throw error;
+    for(const r of data){
+      const cur=S.tx.find(t=>t.id===r.id);
+      const dirty=cur&&SNAP.tx[r.id]!==JSON.stringify(txOut(cur));
+      if(r.deleted){
+        if(cur&&!dirty){S.tx=S.tx.filter(t=>t.id!==r.id);changed=true}
+        if(!dirty)delete SNAP.tx[r.id];
+      }else if(!dirty){
+        const n=txIn(r),js=JSON.stringify(txOut(n));
+        if(!cur){S.tx.push(n);changed=true}
+        else if(JSON.stringify(txOut(cur))!==js){Object.assign(cur,n);changed=true}
+        SNAP.tx[r.id]=js;
+      }
+    }
+    if(data.length)since=data[data.length-1].updated_at;
+    if(data.length<1000)break;
+  }
+  SYNC.pull=since;
+  const st=await pullState(false);if(st.changed)changed=true;
+  return changed;
+}
+function blank(){const s=fresh();s.tx=[];return s}
+function fixLegacy(s){
+  (s.rules||[]).forEach(r=>{if(/^prefume$/i.test(r.kw))r.kw='Perfume'});
+  s.tx=(s.tx||[]).filter(t=>!t.sample);return s;
+}
+function mergeLegacy(L,serverHasState){
+  const have=new Set(S.tx.map(t=>t.id));let n=0;
+  L.tx.forEach(t=>{if(!have.has(t.id)){S.tx.push({id:t.id,date:t.date,desc:t.desc,amount:t.amount,type:t.type,cat:t.cat,pay:t.pay||'',inst:t.inst||''});n++}});
+  if(!serverHasState){S.cats=L.cats;S.rules=L.rules;S.budgets=L.budgets||{};S.theme=L.theme||'auto';S.hideBal=!!L.hideBal}
+  else{
+    L.cats.forEach(c=>{if(!S.cats.some(x=>norm(x.name)===norm(c.name)))S.cats.splice(Math.max(0,S.cats.length-1),0,c)});
+    L.rules.forEach(r=>{if(!S.rules.some(x=>norm(x.kw)===norm(r.kw)))S.rules.push(r)});
+    for(const k in (L.budgets||{}))if(!(k in S.budgets))S.budgets[k]=L.budgets[k];
+  }
+  return n;
+}
+const fmtErr=m=>/invalid login/i.test(m)?'E-mail ou senha incorretos.':/email not confirmed/i.test(m)?'E-mail ainda não confirmado.':/rate limit|too many/i.test(m)?'Muitas tentativas. Aguarde alguns minutos.':/network|fetch/i.test(m)?'Sem conexão com a internet.':m;
+function showAuth(mode,msg,kind){
+  const a=$('#auth');a.classList.remove('hidden');$('#view').classList.add('hidden');$('#nav').classList.add('hidden');document.querySelector('.fab').classList.add('hidden');
+  const m=msg?`<div class="msg ${kind||'err'}">${esc(msg)}</div>`:'';
+  const head='<h1>Barretitto</h1>';
+  if(mode==='login')a.innerHTML=`<form class="box" data-form="login">${head}<p class="sub">Entre na sua conta</p><label>E-mail</label><input id="a-email" type="email" autocomplete="username" required><label>Senha</label><input id="a-pass" type="password" autocomplete="current-password" required><button class="btn" type="submit">Entrar</button><button type="button" class="lnk" data-act="forgot">Esqueci minha senha</button>${m}<p class="sub" style="margin-top:18px;font-size:12px">Acesso somente por convite.</p></form>`;
+  else if(mode==='forgot')a.innerHTML=`<form class="box" data-form="forgot">${head}<p class="sub">Informe seu e-mail para receber o link de nova senha</p><label>E-mail</label><input id="a-email" type="email" required><button class="btn" type="submit">Enviar link</button><button type="button" class="lnk" data-act="tologin">Voltar</button>${m}</form>`;
+  else if(mode==='newpass')a.innerHTML=`<form class="box" data-form="newpass">${head}<p class="sub">Defina sua senha (mín. 8 caracteres)</p><label>Nova senha</label><input id="a-pass" type="password" autocomplete="new-password" minlength="8" required><label>Repita a senha</label><input id="a-pass2" type="password" autocomplete="new-password" minlength="8" required><button class="btn" type="submit">Salvar senha</button>${m}</form>`;
+  else a.innerHTML=`<div class="box">${head}<p class="sub">Carregando…</p></div>`;
+}
+function hideAuth(){$('#auth').classList.add('hidden');$('#view').classList.remove('hidden');$('#nav').classList.remove('hidden');document.querySelector('.fab').classList.remove('hidden')}
+async function startSession(user){
+  USER=user;SYNC.err='';
+  let rec=null;try{rec=JSON.parse(localStorage.getItem(lkey()))}catch(e){}
+  if(rec&&rec.S&&Array.isArray(rec.S.tx)){S=rec.S;SNAP=rec.SNAP||{tx:{},st:''};SYNC.pull=rec.pull||SYNC.pull;LEGACY_DONE=!!rec.legacyDone}
+  else{
+    S=blank();SNAP={tx:{},st:''};SYNC.pull='1970-01-01T00:00:00Z';LEGACY_DONE=false;
+    let serverHas=false;
+    if(navigator.onLine){try{serverHas=(await pullState(true)).found}catch(e){}}
+    let L=null;try{L=JSON.parse(localStorage.getItem(LEGACY_KEY))}catch(e){}
+    if(L&&Array.isArray(L.tx)&&Array.isArray(L.cats)){
+      L=fixLegacy(L);
+      if(L.tx.length&&(await askImport(L.tx.length))){const n=mergeLegacy(L,serverHas);LEGACY_DONE=true;toast(n+' lançamentos importados para sua conta.')}
+    }
+  }
+  hideAuth();persist();render();setStatus();sync();
+}
+function askImport(n){hideAuth();return ask(`Encontrei <b>${n} lançamentos</b> salvos neste aparelho. Deseja importá-los para a sua conta?`,'Importar','Agora não')}
+function wipeLocal(){
+  try{if(USER)localStorage.removeItem(lkey());if(LEGACY_DONE)localStorage.removeItem(LEGACY_KEY)}catch(e){}
+  S=blank();SNAP={tx:{},st:''};SYNC.pull='1970-01-01T00:00:00Z';LEGACY_DONE=false;
+}
+async function boot(){
+  sb.auth.onAuthStateChange((ev,sess)=>{setTimeout(()=>{
+    if(ev==='PASSWORD_RECOVERY'){RECOV=true;showAuth('newpass');return}
+    if(ev==='SIGNED_IN'&&sess&&!RECOV&&(!USER||USER.id!==sess.user.id))startSession(sess.user);
+    if(ev==='SIGNED_OUT'&&USER){USER=null;setStatus();showAuth('login')}
+  },0)});
+  showAuth('load');
+  let ses=null;try{ses=(await sb.auth.getSession()).data.session}catch(e){}
+  if(!ses&&!navigator.onLine){try{const raw=JSON.parse(localStorage.getItem('sb-dxxlirsjkuxiczirohfx-auth-token'));if(raw&&raw.user)ses=raw}catch(e){}}
+  if(RECOV){showAuth('newpass');return}
+  if(ses)await startSession(ses.user);else showAuth('login');
+}
+const FORMS={
+  async login(f){const email=$('#a-email').value.trim(),pw=$('#a-pass').value;showAuth('load');
+    const{data,error}=await sb.auth.signInWithPassword({email,password:pw});
+    if(error){showAuth('login',fmtErr(error.message));$('#a-email').value=email}
+  },
+  async forgot(f){const email=$('#a-email').value.trim();
+    const{error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+    showAuth('login',error?fmtErr(error.message):'Se o e-mail estiver cadastrado, enviamos o link. Confira também o spam.',error?'err':'ok')},
+  async newpass(f){const a=$('#a-pass').value,b=$('#a-pass2').value;
+    if(a!==b){showAuth('newpass','As senhas não conferem.');return}
+    const{data,error}=await sb.auth.updateUser({password:a});
+    if(error){showAuth('newpass',fmtErr(error.message));return}
+    RECOV=false;history.replaceState(null,'',location.pathname);await startSession(data.user)}
+};
+document.addEventListener('submit',e=>{const f=e.target.closest('[data-form]');if(!f)return;e.preventDefault();FORMS[f.dataset.form](f)});
+setInterval(()=>{if(USER&&!document.hidden)sync()},60000);
+addEventListener('online',()=>sync());document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync()});addEventListener('offline',setStatus);
 function fresh(){
   const s={tx:[],cats:DEF_CATS.map(([name,color])=>({name,color})),rules:[],budgets:{'Alimentação':400,Mercado:800,Lazer:250},theme:'auto'};
   for(const c in DEF_RULES)DEF_RULES[c].split(',').forEach(kw=>s.rules.push({kw,cat:c}));
@@ -132,7 +303,7 @@ function sampleData(){
    [-1,11,'Drogasil',45,'out','Saúde','Pix'],[-1,20,'Cinema',112,'out','Lazer','Crédito'],[-1,2,'Academia',99.9,'out','Saúde','Débito']];
   return rows.map(([m,d,desc,amount,type,cat,pay])=>({id:uid(),date:mk(m,d),desc,amount,type,cat,pay,sample:true}));
 }
-let S=load();
+let S=blank();
 const ui={tab:'home',month:iso(new Date()).slice(0,7),f:{month:'cur',type:'',cat:'',pay:'',q:''}};
 const catColor=n=>(S.cats.find(c=>c.name===n)||{}).color||(n==='Receita'?'#16a34a':'#94a3b8');
 
@@ -384,7 +555,8 @@ function viewImport(){
 }
 function viewSettings(){
   return `<h1>Configurações</h1><div class="card"><h2>Aparência</h2><select data-ch="theme"><option value="auto" ${S.theme==='auto'?'selected':''}>Automático (seguir o aparelho)</option><option value="light" ${S.theme==='light'?'selected':''}>Claro</option><option value="dark" ${S.theme==='dark'?'selected':''}>Escuro</option></select></div>
-  <div class="card"><h2>Seus dados</h2><p class="mut" style="margin-top:0">Tudo fica salvo só neste navegador. Faça backup de vez em quando. Limpar os dados do navegador apaga o orçamento.</p><div class="flex"><button class="btn ghost" data-act="expcsv">Exportar CSV</button><button class="btn ghost" data-act="expjson">Backup (JSON)</button><button class="btn ghost" data-act="impjson">Restaurar backup</button></div></div>
+  <div class="card"><h2>Seus dados</h2><p class="mut" style="margin-top:0">Seus dados ficam na sua conta (nuvem) e também neste aparelho, então funciona sem internet e sincroniza sozinho quando voltar. Ainda assim, faça um backup de vez em quando.</p><div class="flex"><button class="btn ghost" data-act="expcsv">Exportar CSV</button><button class="btn ghost" data-act="expjson">Backup (JSON)</button><button class="btn ghost" data-act="impjson">Restaurar backup</button></div></div>
+  <div class="card"><h2>Conta</h2><p class="mut" style="margin-top:0">${esc(USER?USER.email:'')}<br><span id="syncTxt"></span></p><div class="flex"><button class="btn ghost" data-act="syncnow">Sincronizar agora</button><button class="btn ghost" data-act="logout">Sair</button></div><p class="mut" style="margin-bottom:0"><a href="#" data-act="terms">Termos e privacidade</a> · <a href="#" data-act="delacc" style="color:var(--red)">Excluir minha conta</a></p></div>
   <div class="card"><h2>Limpeza</h2><div class="flex"><button class="btn ghost" data-act="clearsamples">Limpar dados de exemplo</button><button class="btn danger" data-act="wipe">Apagar tudo</button></div></div>`;
 }
 function render(){
@@ -474,6 +646,19 @@ const ACT={
   expcsv(){const rows=[['Data','Tipo','Descrição','Categoria','Pagamento','Valor']].concat(S.tx.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(t=>[fdate(t.date),t.type==='in'?'Receita':'Gasto',t.desc,t.cat,t.pay||'',(t.type==='in'?'':'-')+t.amount.toFixed(2).replace('.',',')]));download('orcamento.csv','﻿'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(';')).join('\r\n'),'text/csv')},
   expjson(){download('backup-orcamento-'+iso(new Date())+'.json',JSON.stringify(S),'application/json')},
   impjson(){$('#bkfile').value='';$('#bkfile').click()},
+  syncnow(){if(!navigator.onLine){toast('Sem internet no momento.');return}sync().then(()=>toast(SYNC.err?'Erro: '+SYNC.err:'Sincronizado.'))},
+  async logout(){
+    if(navigator.onLine)await sync();
+    const n=pendingN();
+    if(n&&!(await ask(`Há <b>${n}</b> alteração(ões) que ainda não foram enviadas para a nuvem. Se sair agora, elas serão perdidas.`,'Sair mesmo assim','Cancelar')))return;
+    wipeLocal();USER=null;setStatus();try{await sb.auth.signOut()}catch(e){}showAuth('login')},
+  async delacc(el,e){e.preventDefault();
+    if(!navigator.onLine){toast('Conecte-se à internet para excluir a conta.');return}
+    if(!(await ask('Excluir sua conta e <b>todos os seus dados</b> da nuvem? Isso não pode ser desfeito.','Continuar','Cancelar')))return;
+    if(!(await ask('Última confirmação: apagar a conta definitivamente?','Excluir conta','Cancelar')))return;
+    const{error}=await sb.rpc('delete_my_account');if(error){toast('Erro: '+error.message);return}
+    wipeLocal();USER=null;setStatus();try{await sb.auth.signOut()}catch(_){}showAuth('login','Conta excluída.','ok')},
+  terms(el,e){e.preventDefault();$('#sheetBody').innerHTML=`<div class="flex between"><h2 style="margin:0">Termos e privacidade</h2><button class="btn ghost sm" data-act="closesheet">✕</button></div><div style="font-size:14px"><p><b>Quais dados são guardados.</b> E-mail de acesso e os lançamentos, categorias e regras que você cadastra. Os dados ficam em servidor seguro, isolados por conta: ninguém além de você consegue ver os seus lançamentos.</p><p><b>Para que usamos.</b> Apenas para o funcionamento do aplicativo (guardar e sincronizar seu orçamento). Não vendemos nem compartilhamos seus dados.</p><p><b>Seus direitos (LGPD).</b> Você pode exportar seus dados (CSV/JSON) e excluir a conta e todos os dados a qualquer momento em Config. → Excluir minha conta.</p><p><b>Responsabilidade.</b> O app é uma ferramenta de organização financeira pessoal e não substitui orientação profissional. Mantenha sua senha em segredo.</p><p class="mut">Texto-base provisório; será revisado antes de uso comercial.</p></div>`;$('#sheet').classList.remove('hidden');render()},
   async wipe(){if(await ask('Apagar <b>todos</b> os lançamentos, categorias e regras? Não dá para desfazer.','Apagar tudo')){S=fresh();S.tx=[];save();render();toast('Tudo apagado.')}}
 };
 const CH={
@@ -498,10 +683,10 @@ document.addEventListener('input',e=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='f-text'){e.preventDefault();applyText()}if(e.key==='Escape'&&D)closeSheet()});
 $('#file').addEventListener('change',e=>handleFile(e.target.files[0]));
-$('#bkfile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await readText(f));if(!j||!Array.isArray(j.tx)||!Array.isArray(j.cats))throw 0;if(await ask('Substituir os dados atuais por este backup?','Restaurar')){S=j;save();render();toast('Backup restaurado.')}}catch(err){toast('Arquivo de backup inválido.')}});
+$('#bkfile').addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await readText(f));if(!j||!Array.isArray(j.tx)||!Array.isArray(j.cats))throw 0;if(await ask('Substituir os dados atuais por este backup?','Restaurar')){S=fixLegacy(j);S.budgets=S.budgets||{};save();render();toast('Backup restaurado.')}}catch(err){toast('Arquivo de backup inválido.')}});
 $('#sheet').addEventListener('click',e=>{if(e.target.id==='sheet')closeSheet()});
 if(matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener&&matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(S.theme==='auto')render()});
-save();render();
+boot();
 if('serviceWorker' in navigator&&location.protocol.startsWith('http'))addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 </script>
 </body>
