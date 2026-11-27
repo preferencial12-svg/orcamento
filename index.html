@@ -85,7 +85,7 @@ input[type=date]{-webkit-appearance:none;appearance:none;display:block;width:100
 <div id="syncdot" class="hidden" data-act="syncnow" title="Sincronização"></div>
 <div class="auth hidden" id="auth"></div>
 <div class="app" id="view"></div>
-<button class="fab" data-act="new">+ Novo gasto</button>
+<button class="fab" data-act="new">+ Lançamento</button>
 <nav id="nav"></nav>
 <div class="overlay hidden" id="sheet"><div class="sheet" id="sheetBody"></div></div>
 <input type="file" id="file" class="hidden" accept=".csv,.ofx,.qfx,.pdf,.txt">
@@ -524,7 +524,7 @@ function viewHome(){
    <div class="card kpi" style="margin:0"><small>Saldo</small><b style="color:${hid?'var(--tx)':(inc-tot<0?'var(--red)':'var(--grn)')}">${hid?MASK:fmt(inc-tot)}</b></div>
    <div class="card kpi" style="margin:0"><small>Maior categoria</small><b>${ent[0]?esc(ent[0][0]):'—'}</b><div class="sub">${ent[0]?fmt(ent[0][1])+' · '+pct(ent[0][1]/tot*100):''}</div></div></div>`;
   if(accts().length)h+=`<div class="card"><div class="flex between"><h2 style="margin:0">Minhas contas</h2><a href="#" data-act="tab" data-v="acc">ver todas</a></div>`+accts().map(a=>{const b=acctBal(a);return `<div class="acrow" style="margin-top:10px">${badge(a,30)}<div style="flex:1">${esc(acctName(a))}</div><b style="color:${hid?'var(--tx)':(b<0?'var(--red)':'var(--tx)')}">${hid?MASK:fmt(b)}</b></div>`}).join('')+`</div>`;
-  if(!ent.length)return h+`<div class="card mut">Nenhum gasto neste mês. Toque em <b>+ Novo gasto</b> ou importe um extrato.</div>`;
+  if(!ent.length)return h+`<div class="card mut">Nenhum gasto neste mês. Toque em <b>+ Lançamento</b> ou importe um extrato.</div>`;
   h+=`<div class="card"><h2>Para onde foi o dinheiro</h2><div class="donutwrap">${donut(ent,tot)}<div class="legend">${ent.map(([n,v])=>`<div style="margin-bottom:9px"><div class="flex between"><span><span class="dot" style="background:${catColor(n)};display:inline-block"></span> ${esc(n)}</span><span><b>${fmt(v)}</b> · ${pct(v/tot*100)}</span></div><div class="bar"><i style="width:${v/tot*100}%;background:${catColor(n)}"></i></div></div>`).join('')}</div></div></div>`;
   const names=[...new Set([...cur.keys(),...prv.keys()])].sort((a,b)=>(cur.get(b)||0)-(cur.get(a)||0));
   h+=`<div class="card"><h2>Comparativo: ${monthLabel(pk)} × ${monthLabel(k)}</h2><div class="scroll"><table><tr><th>Categoria</th><th>Anterior</th><th>Atual</th><th>Variação</th></tr>`+names.map(n=>{
